@@ -2,13 +2,35 @@ name: Verify
 on: push
 
 jobs:
-  build-and-deploy:
+  react-versions:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        react: [ 16, 17, 18 ]
+    name: React ${{ matrix.react }} Build
     steps:
-      - name: Checkout 🛎️
-        uses: actions/checkout@v2.3.1
-        with:
-          persist-credentials: false
+      - uses: actions/checkout@v3
+      - uses: volta-cli/action@v3
+      - name: Dependencies
+        run: yarn
+      - name: Custom React version
+        run: |
+          echo "enableImmutableInstalls: false" > ./.yarnrc.yml
+          yarn add react@${{ matrix.react }} -D
+          cd packages/core
+          yarn add react@${{ matrix.react }} -D
+          cd ../..
+          cat ./.yarnrc.yml
+          yarn
+      - name: Build
+        run: yarn build
+
+  verify:
+    runs-on: ubuntu-latest
+    name: Lint and Test
+    steps:
+      - uses: actions/checkout@v3
+      - uses: volta-cli/action@v3
       - name: Dependencies
         run: yarn
       - name: Build
